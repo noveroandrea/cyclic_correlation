@@ -11,6 +11,46 @@ License: BSD 3-Clause License
 import warnings
 import numpy as np
 
+
+def ZC_sequence(r, q, N):
+    """
+    Generates a discrete Zadoff-Chu (ZC) sequence.
+
+    A Zadoff-Chu sequence is a complex-valued sequence with constant amplitude and zero autocorrelation properties, 
+    commonly used in communication systems such as LTE.
+
+    Parameters:
+        r (int): Root index of the ZC sequence. Must satisfy 1 <= r <= N.
+        q (int): Cyclic shift of the sequence. Must satisfy q >= 0.
+        N (int): Length of the sequence. Must satisfy N >= 1.
+
+    Returns:
+        numpy.ndarray: The generated Zadoff-Chu sequence of length N.
+
+    Raises:
+        ValueError: If r is not in the range [1, N], or if q < 0, or if N < 1.
+
+    Notes:
+        - The sequence is generated according to the formula:
+          ZC[k] = exp(-1j * (pi / N) * r * ((k % N) + N % 2 + 2 * (q % N)) * (k % N))
+        - The input parameters should be integers.
+    """
+
+    # Input validation
+    if not (isinstance(r, int) and isinstance(q, int) and isinstance(N, int)):
+        raise ValueError("Parameters r, q, and N must all be integers.")
+    if N < 1:
+        raise ValueError("Parameter N must be >= 1.")
+    if not (1 <= r <= N):
+        raise ValueError("Parameter r must satisfy 1 <= r <= N.")
+    if q < 0:
+        raise ValueError("Parameter q must be >= 0.")
+
+    k = np.arange(0, N)
+    #Compute Z_q1
+    ZC = np.exp(-1j * (np.pi / N) * r * ((k%N)+ N%2 + 2 * (q%N)) * (k%N))
+    return ZC
+    
 def check_inputs_define_limits(s1, s2, method, padded):
     """
     Validates and preprocesses input signals for cyclic correlation.

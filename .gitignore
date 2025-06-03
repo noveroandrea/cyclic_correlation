@@ -1,0 +1,13 @@
+# Exclude Git folder (for safety, but .git is always ignored by Git itself)
+.git/
+# Exclude Python virtual environments
+.venv/
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+# Distribution / packaging
+build/
+dist/
+*.egg-info/
+# VS Code settings
+.vscode/

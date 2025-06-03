@@ -1,6 +1,8 @@
 # Cyclic Correlation Module
 
-This module provides functions to compute the cyclic cross-correlation between two 1D signals using either FFT-based or analytic methods. It supports automatic input validation, optional zero-padding, and normalization.
+This module provides functions to compute the cyclic cross-correlation between two 1D signals using either FFT-based or analytic methods, and to generate Zadoff-Chu sequences. It supports automatic input validation, optional zero-padding, and normalization.
+
+**Current version:** 0.1.3
 
 ## Features
 
@@ -8,6 +10,7 @@ This module provides functions to compute the cyclic cross-correlation between t
 - **Flexible methods**: Choose between `"fft"` (fast) and `"analytic"` (direct computation).
 - **Padding/truncation**: Automatically pads or truncates signals to match lengths if needed.
 - **Normalization**: Optionally normalizes the correlation output.
+- **Zadoff-Chu sequence generation**: Generate ZC sequences for communication applications.
 
 ## Functions
 
@@ -33,6 +36,29 @@ Computes the cyclic cross-correlation between signals `s1` and `s2`.
 
 Validates and prepares input signals for correlation computation.
 
+### `ZC_sequence(r, q, N)`
+
+Generates a discrete Zadoff-Chu (ZC) sequence.
+
+#### Parameters
+
+- `r` (int): Root index of the ZC sequence. Must satisfy 1 <= r <= N.
+- `q` (int): Cyclic shift of the sequence. Must satisfy q >= 0.
+- `N` (int): Length of the sequence. Must satisfy N >= 1.
+
+#### Returns
+
+- `numpy.ndarray`: The generated Zadoff-Chu sequence of length N.
+
+#### Example
+
+```python
+from cyclic_correlation import ZC_sequence
+
+zc = ZC_sequence(r=1, q=0, N=13)
+print("Zadoff-Chu sequence:", zc)
+```
+
 ## Example
 
 ```python
@@ -53,4 +79,4 @@ print("Min value:", min_val)
 
 ## License
 
-MIT License
+BSD-3-Clause
