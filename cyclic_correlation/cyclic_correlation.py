@@ -158,7 +158,12 @@ def cyclic_corr(s1, s2, method="fft", padded=True, normalized=True):
         raise ValueError("Input signals s1 and s2 must be lists or numpy arrays.")
 
     s1, s2 = check_inputs_define_limits(s1, s2, method, padded)
-    n = s1.shape[0]
+
+    n= max(s1.shape[0],s2.shape[0])
+
+    if not padded:
+        n = min(s1.shape[0], s2.shape[0])
+
 
     if method == "analytic":
         # Analytic computation of cyclic cross-correlation
