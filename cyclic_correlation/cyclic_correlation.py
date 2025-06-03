@@ -1,93 +1,150 @@
-from numpy import array, ndarray, pad, conj, fft, max as np_max, min as np_min, abs as np_abs, argmax as np_argmax
+"""
+cyclic_correlation.py
+
+A module for computing the cyclic cross-correlation between two 1D signals.
+Supports both FFT-based and analytic methods, with optional normalization and padding.
+
+Author: Andrea Novero
+License: BSD 3-Clause License
+"""
+
 import warnings
+import numpy as np
 
+def check_inputs_define_limits(s1, s2, method, padded):
+    """
+    Validates and preprocesses input signals for cyclic correlation.
 
-def check_inputs_define_limits(s1,s2,method,padded):
+    Parameters
+    ----------
+    s1 : array-like
+        First input signal (1D).
+    s2 : array-like
+        Second input signal (1D).
+    method : str
+        Correlation method, either 'fft' or 'analytic'.
+    padded : bool
+        If True, pad shorter signal to match the length of the longer one.
+        If False, truncate longer signal to match the length of the shorter one.
 
-    # Check if s1 and s2 are not None and are list or numpy array
+    Returns
+    -------
+    s1 : np.ndarray
+        Processed first signal.
+    s2 : np.ndarray
+        Processed second signal.
+
+    Raises
+    ------
+    ValueError
+        If inputs are invalid.
+    """
+    # Check for None inputs
     if s1 is None or s2 is None:
         raise ValueError("Input signals s1 and s2 must not be None.")
-    if not (isinstance(s1, (list, ndarray)) and isinstance(s2, (list, ndarray))):
+
+    # Ensure inputs are array-like
+    if not (isinstance(s1, (list, np.ndarray)) and isinstance(s2, (list, np.ndarray))):
         raise ValueError("Input signals s1 and s2 must be lists or numpy arrays.")
 
-    # Ensure s1 and s2 are numpy arrays
-    if not isinstance(s1, ndarray):
-        s1 = array(s1)
-    if not isinstance(s2, ndarray):
-        s2 = array(s2)
+    # Convert to numpy arrays
+    s1 = np.array(s1) if not isinstance(s1, np.ndarray) else s1
+    s2 = np.array(s2) if not isinstance(s2, np.ndarray) else s2
 
-    # Check if s1 and s2 are 1D arrays
+    # Ensure 1D arrays
     if s1.ndim != 1 or s2.ndim != 1:
         raise ValueError("Both s1 and s2 must be 1D arrays.")
 
-    # Check if method is valid
-    valid_methods = ["fft", "analytic"]
+    # Validate method
+    valid_methods = ("fft", "analytic")
     if method not in valid_methods:
         raise ValueError(f"Invalid method '{method}'. Supported methods are {valid_methods}.")
-    #check if s1 and s2 have the same length
+
+    # Handle length mismatch
     if s1.shape[0] != s2.shape[0]:
-        #if shape1>shape2:
-        big, small = "s2", "s1"
-
-        if s1.shape[0] > s2.shape[0]:
-            big, small = "s1", "s2"
-
         if padded:
-            #if s2 bigger: pad s2, otherwise pad s1
+            # Pad the shorter signal
             if s1.shape[0] > s2.shape[0]:
-                #pad s1 to s2 length
-                s1 = pad(s1, (0, s2.shape[0] - s1.shape[0]), mode='constant')
+                s2 = np.pad(s2, (0, s1.shape[0] - s2.shape[0]), mode='constant')
+                warnings.warn("s2 is padded to s1 length")
             else:
-                #pad s2 to s1 length
-                s2 = pad(s2, (0, s1.shape[0] - s2.shape[0]), mode='constant')
-            
-            #raise info: big is padded to small length
-            warnings.warn(f"{big} is padded to {small} length")
-        else:        
-            #raise warnings.warn("s2 is truncated to s1 length")
-            warnings.warn(f"{big} is truncated to {small} length")
-            s2 = s2[:s1.shape[0]]
+                s1 = np.pad(s1, (0, s2.shape[0] - s1.shape[0]), mode='constant')
+                warnings.warn("s1 is padded to s2 length")
+        else:
+            # Truncate the longer signal
+            min_len = min(s1.shape[0], s2.shape[0])
+            s1 = s1[:min_len]
+            s2 = s2[:min_len]
+            warnings.warn("Signals are truncated to the length of the shorter one")
 
-    return s1,s2
+    return s1, s2
 
+def cyclic_corr(s1, s2, method="fft", padded=True, normalized=True):
+    """
+    Compute the cyclic cross-correlation between two 1D signals.
 
-def cyclic_corr(s1,s2, method="fft", padded=True, normalized=True):
-    """Compute the normalized maximum of the cyclic cross-correlation."""
+    Parameters
+    ----------
+    s1 : array-like
+        First input signal (1D). Must be a list or numpy array.
+    s2 : array-like
+        Second input signal (1D). Must be a list or numpy array.
+    method : str, optional
+        Correlation method: 'fft' (default) or 'analytic'.
+    padded : bool, optional
+        If True, pad shorter signal to match the longer one (default True).
+        If False, truncate longer signal to match the shorter one.
+    normalized : bool, optional
+        If True, normalize the correlation output (default True).
 
-    s1,s2= check_inputs_define_limits(s1,s2,method,padded)
+    Returns
+    -------
+    Z : np.ndarray
+        Cyclic cross-correlation sequence.
+    max_val : float
+        Maximum absolute value in the correlation sequence.
+    t_max : int
+        Index of the maximum absolute value.
+    min_val : float
+        Minimum absolute value in the correlation sequence.
 
-    range_limit = max(s1.shape[0], s2.shape[0]) if padded else min(s1.shape[0], s2.shape[0])
+    Raises
+    ------
+    ValueError
+        If inputs are invalid.
+    """
+    # Only allow list or numpy array types for s1 and s2
+    if not (isinstance(s1, (list, np.ndarray)) and isinstance(s2, (list, np.ndarray))):
+        raise ValueError("Input signals s1 and s2 must be lists or numpy arrays.")
+
+    s1, s2 = check_inputs_define_limits(s1, s2, method, padded)
+    n = s1.shape[0]
 
     if method == "analytic":
-        Z=[]
-        for t in range(0,range_limit):
-            Zk=0
-            for k in range(0, range_limit):
-                Zk+=s1[k]*conj(s2[(k+t)%(s2.shape[0])])
-                
-            Zl=0
-            for l in range(0,range_limit):
-
-
-                Zl+=conj(s1[k])*s2[(k+t)%(s2.shape[0])]
-            
-            Z.append(Zk*Zl)
-
-        if(normalized): 
-            Z=Z//(range_limit**2)
+        # Analytic computation of cyclic cross-correlation
+        Z = []
+        for t in range(n):
+            Zk = 0
+            for k in range(n):
+                Zk += s1[k] * np.conj(s2[(k + t) % n])
+            Zl = 0
+            for l in range(n):
+                Zl += np.conj(s1[l]) * s2[(l + t) % n]
+            Z.append(Zk * Zl)
+        Z = np.array(Z)
+        if normalized:
+            Z = Z / (n ** 2)
     else:
+        # FFT-based computation
+        X = np.fft.fft(s1)
+        Y = np.fft.fft(s2)
+        Z = np.fft.ifft(X * np.conj(Y))
+        if normalized:
+            Z = Z / n
 
-        X = fft.fft(s1)
-        Y = fft.fft(s2)
-        Z = fft.ifft(X * conj(Y))
-        if(normalized):
-            Z = Z / (range_limit)
+    abs_Z = np.abs(Z)
+    max_val = np.max(abs_Z)
+    min_val = np.min(abs_Z)
+    t_max = np.argmax(abs_Z)
 
-    max_val = np_max(np_abs(Z))
-    min_val=np_min(np_abs(Z))
-    #max_val = np.abs(cyclic_cross_corr[30])
-    t_max = np_argmax(np_abs(Z))
-
-
-    return Z,max_val, t_max, min_val
-
+    return Z, max_val, t_max, min_val
