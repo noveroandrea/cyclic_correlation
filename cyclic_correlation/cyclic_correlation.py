@@ -51,7 +51,7 @@ def ZC_sequence(r, q, N):
     ZC = np.exp(-1j * (np.pi / N) * r * ((k%N)+ N%2 + 2 * (q%N)) * (k%N))
     return ZC
     
-def check_inputs_define_limits(s1, s2, method, padded):
+def check_inputs_define_limits(s1, s2, method, wrt, padded):
     """
     Validates and preprocesses input signals for cyclic correlation.
 
@@ -63,6 +63,10 @@ def check_inputs_define_limits(s1, s2, method, padded):
         Second input signal (1D).
     method : str
         Correlation method, either 'fft' or 'analytic'.
+    wrt : str
+        Specifies the CC window:
+        - 'short': shorter sequence window.
+        - 'long':  longer sequence window.
     padded : bool
         If True, pad shorter signal to match the length of the longer one.
         If False, truncate longer signal to match the length of the shorter one.
@@ -95,10 +99,29 @@ def check_inputs_define_limits(s1, s2, method, padded):
     if s1.ndim != 1 or s2.ndim != 1:
         raise ValueError("Both s1 and s2 must be 1D arrays.")
 
-    # Validate method
+    # Validate method  
+    if not isinstance(method, str):
+        raise ValueError("Parameter 'method' must be a string.")
+    if method is None:
+        raise ValueError("Parameter 'method' must not be None.")
+    method = method.lower()
+
+    # Define valid methods
     valid_methods = ("fft", "analytic")
     if method not in valid_methods:
         raise ValueError(f"Invalid method '{method}'. Supported methods are {valid_methods}.")
+
+    # Validate wrt parameter
+    if not isinstance(wrt, str):
+        raise ValueError("Parameter 'wrt' must be a string.")
+    if wrt is None:
+        raise ValueError("Parameter 'wrt' must not be None.")
+    wrt = wrt.lower()
+    # Define valid wrt options
+    valid_wrt = ("short", "long")
+    if wrt not in valid_wrt:
+        raise ValueError(f"Invalid wrt '{wrt}'. Supported options are {valid_wrt}.")
+    
 
     # Handle length mismatch
     if s1.shape[0] != s2.shape[0]:
@@ -111,15 +134,23 @@ def check_inputs_define_limits(s1, s2, method, padded):
                 s1 = np.pad(s1, (0, s2.shape[0] - s1.shape[0]), mode='constant')
                 warnings.warn("s1 is padded to s2 length")
         else:
-            # Truncate the longer signal
-            min_len = min(s1.shape[0], s2.shape[0])
-            s1 = s1[:min_len]
-            s2 = s2[:min_len]
-            warnings.warn("Signals are truncated to the length of the shorter one")
+
+            if wrt == "short":
+                # Truncate the longer signal
+                min_len = min(s1.shape[0], s2.shape[0])
+                s1 = s1[:min_len]
+                s2 = s2[:min_len]
+                warnings.warn("Signals are truncated to the length of the shorter one")
+            else:
+                # Repeat the shoerter signal to match the longer one
+                max_len = max(s1.shape[0], s2.shape[0])
+                s1 = np.resize(s1, max_len)
+                s2 = np.resize(s2, max_len)
+                warnings.warn("Signals are resized to the length of the longer one")
 
     return s1, s2
 
-def cyclic_corr(s1, s2, method="fft", padded=True, normalized=True):
+def cyclic_corr(s1, s2, method="fft", padded=True, wrt="short", normalized=True):
     """
     Compute the cyclic cross-correlation between two 1D signals.
 
@@ -134,6 +165,10 @@ def cyclic_corr(s1, s2, method="fft", padded=True, normalized=True):
     padded : bool, optional
         If True, pad shorter signal to match the longer one (default True).
         If False, truncate longer signal to match the shorter one.
+    wrt : str
+        Specifies the CC window:
+        - 'short': shorter sequence window.
+        - 'long':  longer sequence window.
     normalized : bool, optional
         If True, normalize the correlation output (default True).
 
@@ -157,7 +192,7 @@ def cyclic_corr(s1, s2, method="fft", padded=True, normalized=True):
     if not (isinstance(s1, (list, np.ndarray)) and isinstance(s2, (list, np.ndarray))):
         raise ValueError("Input signals s1 and s2 must be lists or numpy arrays.")
 
-    s1, s2 = check_inputs_define_limits(s1, s2, method, padded)
+    s1, s2 = check_inputs_define_limits(s1, s2, method,wrt, padded)
 
     n= max(s1.shape[0],s2.shape[0])
 
