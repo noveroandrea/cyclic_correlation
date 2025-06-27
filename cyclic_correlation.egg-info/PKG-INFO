@@ -1,6 +1,6 @@
-Metadata-Version: 2.4
+Metadata-Version: 2.1
 Name: cyclic_correlation
-Version: 0.1.4
+Version: 0.1.5
 Summary: Cyclic cross-correlation utilities and Zadoff-Chu sequence generation
 Home-page: https://github.com/noveroandrea/cyclic_correlation
 Author: Andrea Novero
@@ -10,16 +10,6 @@ Requires-Python: >=3.6
 Description-Content-Type: text/markdown
 License-File: LICENSE.txt
 Requires-Dist: numpy
-Dynamic: author
-Dynamic: author-email
-Dynamic: description
-Dynamic: description-content-type
-Dynamic: home-page
-Dynamic: license
-Dynamic: license-file
-Dynamic: requires-dist
-Dynamic: requires-python
-Dynamic: summary
 
 # Cyclic Correlation Module
 
