@@ -194,9 +194,8 @@ def cyclic_corr(s1, s2, method="fft", padded=True, wrt="short", normalized=True)
 
     s1, s2 = check_inputs_define_limits(s1, s2, method,wrt, padded)
 
-    n= max(s1.shape[0],s2.shape[0])
-
-    if not padded:
+    #normalization is done on the shorter length
+    if(normalized):
         n = min(s1.shape[0], s2.shape[0])
 
 
