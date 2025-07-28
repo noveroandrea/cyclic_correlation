@@ -122,6 +122,15 @@ def check_inputs_define_limits(s1, s2, method, wrt, padded,normalized=True, ccwi
     if wrt not in valid_wrt:
         raise ValueError(f"Invalid wrt '{wrt}'. Supported options are {valid_wrt}.")
     
+    if not isinstance(  padded, bool):
+        raise ValueError("Parameter 'padded' must be a boolean.")
+    
+    if not isinstance(normalized, bool):
+        raise ValueError("Parameter 'normalized' must be a boolean.")
+    
+    if not isinstance(ccwindow, int):
+        raise ValueError("Parameter 'ccwindow' must be an integer.")
+
     #normalization is done on the shorter length
     if(normalized):
         n = min(s1.shape[0], s2.shape[0])
