@@ -51,7 +51,7 @@ def ZC_sequence(r, q, N):
     ZC = np.exp(-1j * (np.pi / N) * r * ((k%N)+ N%2 + 2 * (q%N)) * (k%N))
     return ZC
     
-def check_inputs_define_limits(s1, s2, method, wrt, padded):
+def check_inputs_define_limits(s1, s2, method, wrt, padded,normalized=True, ccwindow=0):
     """
     Validates and preprocesses input signals for cyclic correlation.
 
@@ -122,6 +122,27 @@ def check_inputs_define_limits(s1, s2, method, wrt, padded):
     if wrt not in valid_wrt:
         raise ValueError(f"Invalid wrt '{wrt}'. Supported options are {valid_wrt}.")
     
+    #normalization is done on the shorter length
+    if(normalized):
+        n = min(s1.shape[0], s2.shape[0])
+
+
+    if s1.shape[0] == s2.shape[0]:
+        padded = False
+        warnings.warn("Signals are of equal length, considering ccwindow")
+        # If lengths are equal, no action needed
+        n = s1.shape[0]
+
+        warnings.warn("Signals are of equal length, no padding or truncation applied")
+        if ccwindow<=0 or ccwindow>n:
+            ccwindow = n
+            warnings.warn(f"ccwindow set to {n} as it was not specified or out of bounds")
+        else: 
+            #truncate second signal to the length of ccwindow
+            n=ccwindow
+            s2 = s2[:ccwindow]
+            warnings.warn(f"ccwindow set to {ccwindow} and s2 truncated to this length")
+            #now sequences are of different lengths
 
     # Handle length mismatch
     if s1.shape[0] != s2.shape[0]:
@@ -148,9 +169,10 @@ def check_inputs_define_limits(s1, s2, method, wrt, padded):
                 s2 = np.resize(s2, max_len)
                 warnings.warn("Signals are resized to the length of the longer one")
 
-    return s1, s2
 
-def cyclic_corr(s1, s2, method="fft", padded=True, wrt="short", normalized=True):
+    return s1, s2, n, ccwindow
+
+def cyclic_corr(s1, s2, method="fft", padded=True, wrt="short", normalized=True, ccwindow=0):
     """
     Compute the cyclic cross-correlation between two 1D signals.
 
@@ -192,11 +214,9 @@ def cyclic_corr(s1, s2, method="fft", padded=True, wrt="short", normalized=True)
     if not (isinstance(s1, (list, np.ndarray)) and isinstance(s2, (list, np.ndarray))):
         raise ValueError("Input signals s1 and s2 must be lists or numpy arrays.")
 
-    s1, s2 = check_inputs_define_limits(s1, s2, method,wrt, padded)
+    s1, s2, n, ccwindow = check_inputs_define_limits(s1, s2, method,wrt, padded,normalized, ccwindow)
 
-    #normalization is done on the shorter length
-    if(normalized):
-        n = min(s1.shape[0], s2.shape[0])
+
 
 
     if method == "analytic":
