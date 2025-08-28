@@ -1,6 +1,6 @@
 Metadata-Version: 2.1
 Name: cyclic_correlation
-Version: 0.1.10
+Version: 0.1.11
 Summary: Cyclic cross-correlation utilities and Zadoff-Chu sequence generation
 Home-page: https://github.com/noveroandrea/cyclic_correlation
 Author: Andrea Novero

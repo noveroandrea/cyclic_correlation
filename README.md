@@ -2,7 +2,7 @@
 
 This module provides functions to compute the cyclic cross-correlation between two 1D signals using either FFT-based or analytic methods, and to generate Zadoff-Chu sequences. It supports automatic input validation, optional zero-padding, and normalization.
 
-**Current version:** 0.1.10
+**Current version:** 0.1.11
 
 ## Features
 
@@ -14,7 +14,7 @@ This module provides functions to compute the cyclic cross-correlation between t
 
 ## Functions
 
-### `cyclic_corr(s1, s2, method="fft", padded=True, normalized=True)`
+### `cyclic_corr(s1, s2, method="fft", wrt="short", normalized=True, ccwindow=0, shift=0)`
 
 Computes the cyclic cross-correlation between signals `s1` and `s2`.
 
@@ -22,8 +22,10 @@ Computes the cyclic cross-correlation between signals `s1` and `s2`.
 
 - `s1`, `s2`: 1D lists or numpy arrays (input signals).
 - `method`: `"fft"` (default) or `"analytic"`.
-- `padded`: If `True`, pads shorter signal to match the longer one.
+- `wrt`: `"short"` (default) or `"long"`; specifies the correlation window reference.
 - `normalized`: If `True`, normalizes the correlation output.
+- `ccwindow`: If >0, sets the length of the correlation window (default 0, meaning full).
+- `shift`: If >0, shifts the window start index.
 
 #### Returns
 
@@ -32,7 +34,7 @@ Computes the cyclic cross-correlation between signals `s1` and `s2`.
 - `t_max`: Index of the maximum correlation.
 - `min_val`: Minimum absolute value of the correlation.
 
-### `check_inputs_define_limits(s1, s2, method, padded)`
+### `check_inputs_define_limits(s1, s2, method, wrt, normalized=True, ccwindow=0, shift=0)`
 
 Validates and prepares input signals for correlation computation.
 
@@ -66,7 +68,7 @@ from cyclic_correlation import cyclic_corr
 
 s1 = [1, 2, 3, 4]
 s2 = [4, 3, 2, 1]
-Z, max_val, t_max, min_val = cyclic_corr(s1, s2, method="fft", padded=True, normalized=True)
+Z, max_val, t_max, min_val = cyclic_corr(s1, s2, method="fft", wrt="short", normalized=True)
 print("Correlation:", Z)
 print("Max value:", max_val)
 print("Index of max:", t_max)

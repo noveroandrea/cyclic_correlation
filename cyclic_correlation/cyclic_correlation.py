@@ -51,7 +51,7 @@ def ZC_sequence(r, q, N):
     ZC = np.exp(-1j * (np.pi / N) * r * ((k%N)+ N%2 + 2 * (q%N)) * (k%N))
     return ZC
     
-def check_inputs_define_limits(s1, s2, method, wrt, padded,normalized=True, ccwindow=0,shift=0):
+def check_inputs_define_limits(s1, s2, method, wrt,normalized=True, ccwindow=0,shift=0):
     """
     Validates and preprocesses input signals for cyclic correlation.
 
@@ -67,13 +67,8 @@ def check_inputs_define_limits(s1, s2, method, wrt, padded,normalized=True, ccwi
         Specifies the CC window:
         - 'short': shorter sequence window.
         - 'long':  longer sequence window.
-    padded : bool
-        If True, pad shorter signal to match the length of the longer one.
-        If False, truncate longer signal to match the length of the shorter one.
-
     normalized : bool, optional
         If True, normalize the correlation output (default True).
-
     ccwindow, shift : int, optional
         If >0, defines the length of the correlation window (default 0, meaning full)
         Must be <= length of the shorter input sequence.
@@ -130,9 +125,7 @@ def check_inputs_define_limits(s1, s2, method, wrt, padded,normalized=True, ccwi
     if wrt not in valid_wrt:
         raise ValueError(f"Invalid wrt '{wrt}'. Supported options are {valid_wrt}.")
     
-    if not isinstance(  padded, bool):
-        raise ValueError("Parameter 'padded' must be a boolean.")
-    
+
     if not isinstance(normalized, bool):
         raise ValueError("Parameter 'normalized' must be a boolean.")
     
@@ -147,7 +140,6 @@ def check_inputs_define_limits(s1, s2, method, wrt, padded,normalized=True, ccwi
 
 
     if s1.shape[0] == s2.shape[0]:
-        padded = False
         warnings.warn("Signals are of equal length, considering ccwindow")
         # If lengths are equal, no action needed
         n = s1.shape[0]
@@ -183,7 +175,7 @@ def check_inputs_define_limits(s1, s2, method, wrt, padded,normalized=True, ccwi
 
     return s1, s2, n
 
-def cyclic_corr(s1, s2, method="fft", padded=True, wrt="short", normalized=True, ccwindow=0,shift=0):
+def cyclic_corr(s1, s2, method="fft", wrt="short", normalized=True, ccwindow=0,shift=0):
     """
     Compute the cyclic cross-correlation between two 1D signals.
 
@@ -195,9 +187,6 @@ def cyclic_corr(s1, s2, method="fft", padded=True, wrt="short", normalized=True,
         Second input sequence (1D). Must be a list or numpy array.
     method : str, optional
         Correlation method: 'fft' (default) or 'analytic'.
-    padded : bool, optional
-        If True, pad shorter sequence to match the longer one (default True).
-        If False, truncate longer sequence to match the shorter one.
     wrt : str
         Specifies the CC window:
         - 'short': shorter sequence window.
@@ -228,7 +217,7 @@ def cyclic_corr(s1, s2, method="fft", padded=True, wrt="short", normalized=True,
     if not (isinstance(s1, (list, np.ndarray)) and isinstance(s2, (list, np.ndarray))):
         raise ValueError("Input signals s1 and s2 must be lists or numpy arrays.")
 
-    s1, s2, n = check_inputs_define_limits(s1, s2, method,wrt, padded,normalized, ccwindow,shift)
+    s1, s2, n = check_inputs_define_limits(s1, s2, method,wrt,normalized, ccwindow,shift)
 
 
 
