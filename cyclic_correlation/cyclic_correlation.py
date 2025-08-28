@@ -51,7 +51,7 @@ def ZC_sequence(r, q, N):
     ZC = np.exp(-1j * (np.pi / N) * r * ((k%N)+ N%2 + 2 * (q%N)) * (k%N))
     return ZC
     
-def check_inputs_define_limits(s1, s2, method, wrt, padded,normalized=True, ccwindow=0):
+def check_inputs_define_limits(s1, s2, method, wrt, padded,normalized=True, ccwindow=0,shift=0):
     """
     Validates and preprocesses input signals for cyclic correlation.
 
@@ -70,6 +70,14 @@ def check_inputs_define_limits(s1, s2, method, wrt, padded,normalized=True, ccwi
     padded : bool
         If True, pad shorter signal to match the length of the longer one.
         If False, truncate longer signal to match the length of the shorter one.
+
+    normalized : bool, optional
+        If True, normalize the correlation output (default True).
+
+    ccwindow, shift : int, optional
+        If >0, defines the length of the correlation window (default 0, meaning full)
+        Must be <= length of the shorter input sequence.
+        The shorter sequence is truncated [shift:ccwindw+shift], (if ccwindow+shift<=length, otherwise [0:ccwindow])  before padding correlation.
 
     Returns
     -------
@@ -131,9 +139,11 @@ def check_inputs_define_limits(s1, s2, method, wrt, padded,normalized=True, ccwi
     if not isinstance(ccwindow, int):
         raise ValueError("Parameter 'ccwindow' must be an integer.")
 
-    #normalization is done on the shorter length
-    if(normalized):
-        n = min(s1.shape[0], s2.shape[0])
+    if not isinstance(shift, int):
+        raise ValueError("Parameter 'shift' must be an integer.")
+
+    #normalization is done on the shorter length, n or on ccwindow if specified
+    n = min(s1.shape[0], s2.shape[0])
 
 
     if s1.shape[0] == s2.shape[0]:
@@ -142,67 +152,62 @@ def check_inputs_define_limits(s1, s2, method, wrt, padded,normalized=True, ccwi
         # If lengths are equal, no action needed
         n = s1.shape[0]
 
-        warnings.warn("Signals are of equal length, no padding or truncation applied")
-        if ccwindow<=0 or ccwindow>n:
-            ccwindow = n
-            warnings.warn(f"ccwindow set to {n} as it was not specified or out of bounds")
-        else: 
-            #truncate second signal to the length of ccwindow
-            n=ccwindow
-            s2 = s2[:ccwindow]
-            warnings.warn(f"ccwindow set to {ccwindow} and s2 truncated to this length")
-            #now sequences are of different lengths
+        warnings.warn("Signals are of equal length, for truncation considering ccwindow")
 
-    # Handle length mismatch
+    if ccwindow<=0 or ccwindow>n: #the ccwindow can be at most equal to the length of the shorter sequence, n
+        ccwindow = n
+        warnings.warn(f"ccwindow set to {n} as it was not specified or out of bounds")
+    else: 
+        #truncate shorter signal to the length of ccwindow
+        n=ccwindow
+        if s1.shape[0]>s2.shape[0]:
+            s2 = s2[shift:n+shift] if (n+shift)<=s2.shape[0] else s2[0:n]
+            warnings.warn(f"ccwindow set to {n} and s2 truncated to this length, considering shift")
+
+        else:    
+            s1 = s1[shift:n+shift] if (n+shift)<=s1.shape[0] else s1[0:n]
+            warnings.warn(f"ccwindow set to {n} and s1 truncated to this length, considering shift")
+
+        #now sequences are of different lengths
+
+    # Handle length mismatch, do padding always but remember to normalize on shorter length sequence now being n
     if s1.shape[0] != s2.shape[0]:
-        if padded:
-            # Pad the shorter signal
-            if s1.shape[0] > s2.shape[0]:
-                s2 = np.pad(s2, (0, s1.shape[0] - s2.shape[0]), mode='constant')
-                warnings.warn("s2 is padded to s1 length")
-            else:
-                s1 = np.pad(s1, (0, s2.shape[0] - s1.shape[0]), mode='constant')
-                warnings.warn("s1 is padded to s2 length")
+        # Pad the shorter signal
+        if s1.shape[0] > s2.shape[0]:
+            s2 = np.pad(s2, (0, s1.shape[0] - s2.shape[0]), mode='constant')
+            warnings.warn("s2 is padded to s1 length")
         else:
+            s1 = np.pad(s1, (0, s2.shape[0] - s1.shape[0]), mode='constant')
+            warnings.warn("s1 is padded to s2 length")
+       
 
-            if wrt == "short":
-                # Truncate the longer signal
-                min_len = min(s1.shape[0], s2.shape[0])
-                s1 = s1[:min_len]
-                s2 = s2[:min_len]
-                warnings.warn("Signals are truncated to the length of the shorter one")
-            else:
-                # Repeat the shoerter signal to match the longer one
-                max_len = max(s1.shape[0], s2.shape[0])
-                s1 = np.resize(s1, max_len)
-                s2 = np.resize(s2, max_len)
-                warnings.warn("Signals are resized to the length of the longer one")
+    return s1, s2, n
 
-
-    return s1, s2, n, ccwindow
-
-def cyclic_corr(s1, s2, method="fft", padded=True, wrt="short", normalized=True, ccwindow=0):
+def cyclic_corr(s1, s2, method="fft", padded=True, wrt="short", normalized=True, ccwindow=0,shift=0):
     """
     Compute the cyclic cross-correlation between two 1D signals.
 
     Parameters
     ----------
     s1 : array-like
-        First input signal (1D). Must be a list or numpy array.
+        First input sequence (1D). Must be a list or numpy array.
     s2 : array-like
-        Second input signal (1D). Must be a list or numpy array.
+        Second input sequence (1D). Must be a list or numpy array.
     method : str, optional
         Correlation method: 'fft' (default) or 'analytic'.
     padded : bool, optional
-        If True, pad shorter signal to match the longer one (default True).
-        If False, truncate longer signal to match the shorter one.
+        If True, pad shorter sequence to match the longer one (default True).
+        If False, truncate longer sequence to match the shorter one.
     wrt : str
         Specifies the CC window:
         - 'short': shorter sequence window.
         - 'long':  longer sequence window.
     normalized : bool, optional
         If True, normalize the correlation output (default True).
-
+    ccwindow,shift : int, optional
+        If >0, defines the length of the correlation window (default 0, meaning full)
+        Must be <= length of the shorter input sequence.
+        The shorter sequence is truncated [shift:ccwindw+shift], (if ccwindow+shift<=length, otherwise [0:ccwindow])  before padding correlation.
     Returns
     -------
     Z : np.ndarray
@@ -223,7 +228,7 @@ def cyclic_corr(s1, s2, method="fft", padded=True, wrt="short", normalized=True,
     if not (isinstance(s1, (list, np.ndarray)) and isinstance(s2, (list, np.ndarray))):
         raise ValueError("Input signals s1 and s2 must be lists or numpy arrays.")
 
-    s1, s2, n, ccwindow = check_inputs_define_limits(s1, s2, method,wrt, padded,normalized, ccwindow)
+    s1, s2, n = check_inputs_define_limits(s1, s2, method,wrt, padded,normalized, ccwindow,shift)
 
 
 

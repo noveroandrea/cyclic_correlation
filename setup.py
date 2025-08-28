@@ -2,7 +2,7 @@ from setuptools import setup, find_packages
 
 setup(
     name="cyclic_correlation",
-    version="0.1.9",
+    version="0.1.10",
     description="Cyclic cross-correlation utilities and Zadoff-Chu sequence generation",
     author="Andrea Novero",
     author_email="your@email.com",

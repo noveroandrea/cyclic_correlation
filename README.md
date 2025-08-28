@@ -2,7 +2,7 @@
 
 This module provides functions to compute the cyclic cross-correlation between two 1D signals using either FFT-based or analytic methods, and to generate Zadoff-Chu sequences. It supports automatic input validation, optional zero-padding, and normalization.
 
-**Current version:** 0.1.9
+**Current version:** 0.1.10
 
 ## Features
 
